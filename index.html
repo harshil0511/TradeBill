@@ -502,8 +502,6 @@
             <h2 class="card-title">Brokerage Entries
                 <span style="font-size:0.7rem; font-family:'DM Sans',sans-serif; font-weight:400; display:flex; gap:0.5rem;">
                     <button onclick="clearCustomList('buyer')" style="background:none;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:0.7rem;color:#64748b;" title="Clear custom party names">Clear Parties</button>
-                    <button onclick="clearCustomList('truck')" style="background:none;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:0.7rem;color:#64748b;" title="Clear custom truck numbers">Clear Trucks</button>
-                    <button onclick="clearCustomList('agency')" style="background:none;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:0.7rem;color:#64748b;" title="Clear custom agencies">Clear Agencies</button>
                 </span>
             </h2>
             <table id="entriesTable">
@@ -517,7 +515,7 @@
                         <th>Weight (kg)</th>
                         <th>Dalali (Rs) ★</th>
                         <th>Truck No.</th>
-                        <th>Agency</th>
+                        <th>Cutt Dalali</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -565,9 +563,7 @@
         let entries = [];
 
         // Original default lists
-        const origAgencies = ['M/S SHAH AGENCY', 'SHREE AGENCY', 'SURAJMAL KARANMAL', 'S.S AGENCY'];
-        const origBuyers = ['SHREE LAXMI AGRO', 'VINAYAK CORPORATION', 'VIKASH TRADERS', 'DHANLAXMI ENTERPRIES', 'GANESH TREDING', 'PRINCE ENTERPRIES', 'AADESH TREDING'];
-        const origTrucks = ['RJ09GC9346','RJ12GA2985','GJ09AU6834','RJ35GA1444','RJ35GA9450','RJ27GA9968','GJ08Z4168','RJ27GB1035','GJ09Z4168','GJ09Z8870','RJ12GB0188','RJ27GC1552','RJ12GB0288','RJ35GA0741','RJ14GH2397','RJ35GA2346','RJ27GC5554','RJ12GA9621','RJ12GA1433','RJ27GB5680','RJ09GE1836','RJ35GA8886'];
+        const origBuyers = [];
 
         // Active lists — loaded from localStorage if cleared, otherwise defaults + custom
         // When user clears, we save an empty array as the active list
@@ -578,13 +574,9 @@
             return [...origList]; // not cleared yet, use defaults
         }
 
-        let activeAgencies = loadList('tradebill_agencies', origAgencies);
         let activeBuyers = loadList('tradebill_buyers', origBuyers);
-        let activeTrucks = loadList('tradebill_trucks', origTrucks);
 
-        function getAllAgencies() { return activeAgencies; }
         function getAllBuyers() { return activeBuyers; }
-        function getAllTrucks() { return activeTrucks; }
 
         // Generic handler for select dropdowns with +New option
         function handleSelectChange(id, field, selectEl, activeList, storageKey, label) {
@@ -607,30 +599,16 @@
             }
         }
 
-        function handleAgencyChange(id, selectEl) {
-            handleSelectChange(id, 'agency', selectEl, activeAgencies, 'tradebill_agencies', 'agency name');
-        }
         function handlePartyChange(id, selectEl) {
             handleSelectChange(id, 'party', selectEl, activeBuyers, 'tradebill_buyers', 'party name');
-        }
-        function handleTruckChange(id, selectEl) {
-            handleSelectChange(id, 'truckNo', selectEl, activeTrucks, 'tradebill_trucks', 'truck number');
         }
 
         // Clear ALL entries from a dropdown list
         function clearCustomList(type) {
-            if (type === 'agency') {
-                if (!confirm(`Clear all ${activeAgencies.length} agencies from dropdown?`)) return;
-                activeAgencies = [];
-                localStorage.setItem('tradebill_agencies', '[]');
-            } else if (type === 'buyer') {
+            if (type === 'buyer') {
                 if (!confirm(`Clear all ${activeBuyers.length} party names from dropdown?`)) return;
                 activeBuyers = [];
                 localStorage.setItem('tradebill_buyers', '[]');
-            } else if (type === 'truck') {
-                if (!confirm(`Clear all ${activeTrucks.length} truck numbers from dropdown?`)) return;
-                activeTrucks = [];
-                localStorage.setItem('tradebill_trucks', '[]');
             }
             renderTable();
             showToast(`All ${type} entries cleared! Use "+ New" to add.`);
@@ -699,7 +677,7 @@
                 weight: '',
                 dalali: '',
                 truckNo: '',
-                agency: activeAgencies.length > 0 ? activeAgencies[0] : ''
+                cuttDalali: ''
             };
             entries.push(newRow);
             renderTable();
@@ -725,20 +703,8 @@
                     <td><input type="text" value="${row.billNo}" onchange="updateRow(${row.id}, 'billNo', this.value)"></td>
                     <td><input type="number" value="${row.weight}" oninput="handleWeightInput(${row.id}, this.value)"></td>
                     <td><input type="number" id="dalali-${row.id}" value="${row.dalali}" class="${row.autoCalc ? 'auto-calc' : ''}" onchange="overrideDalali(${row.id}, this.value)"></td>
-                    <td>
-                        <select onchange="handleTruckChange(${row.id}, this)">
-                            <option value="" ${!row.truckNo ? 'selected' : ''}>-- Select --</option>
-                            ${getAllTrucks().map(t => `<option value="${t}" ${row.truckNo === t ? 'selected' : ''}>${t}</option>`).join('')}
-                            <option value="__NEW__">+ New Truck</option>
-                        </select>
-                    </td>
-                    <td>
-                        <select onchange="handleAgencyChange(${row.id}, this)">
-                            <option value="" ${!row.agency ? 'selected' : ''}>-- Select --</option>
-                            ${getAllAgencies().map(a => `<option value="${a}" ${row.agency === a ? 'selected' : ''}>${a}</option>`).join('')}
-                            <option value="__NEW__">+ New Agency</option>
-                        </select>
-                    </td>
+                    <td><input type="text" value="${row.truckNo}" placeholder="RJ09GC9346" style="color:#000;" oninput="this.value=this.value.toUpperCase()" onchange="updateRow(${row.id}, 'truckNo', this.value.toUpperCase())"></td>
+                    <td><input type="number" value="${row.cuttDalali}" onchange="updateRow(${row.id}, 'cuttDalali', this.value)"></td>
                     <td class="table-actions">
                         <button class="icon-btn" onclick="duplicateRow(${row.id})" title="Duplicate">📋</button>
                         <button class="icon-btn" onclick="deleteRow(${row.id})" title="Delete">🗑️</button>
@@ -898,7 +864,7 @@
                     { width: 13 },  // F - WEIGHT
                     { width: 15 },  // G - DALALI
                     { width: 16 },  // H - TRUCK NO
-                    { width: 26 },  // I - AGENCY
+                    { width: 16 },  // I - CUTT DALALI
                 ];
 
                 // Reusable styles
@@ -1110,7 +1076,7 @@
                 // ═══════════════════════════════════════════════════════
 
                 // ROW 22: Column headers — gray bg, bold, thin borders, centered
-                const dHeaders = ['SL NO.', 'DATE', 'NAME', 'RATE', 'BILL NO.', 'WEIGHT', 'DALALI', 'TRUCK NO.', 'AGENCY'];
+                const dHeaders = ['SL NO.', 'DATE', 'NAME', 'RATE', 'BILL NO.', 'WEIGHT', 'DALALI', 'TRUCK NO.', 'CUTT DALALI'];
                 const dhRow = ws.getRow(22);
                 dHeaders.forEach((h, i) => { dhRow.getCell(i + 1).value = h; });
                 styleRow(ws, 22, 1, 9, boldFont, lightGrayFill, thinBorder, { horizontal: 'center', vertical: 'middle' });
@@ -1128,12 +1094,13 @@
                     row.getCell(6).value = Number(entry.weight) || 0;
                     row.getCell(7).value = Number(entry.dalali) || 0;
                     row.getCell(8).value = entry.truckNo;
-                    row.getCell(9).value = entry.agency;
+                    row.getCell(9).value = Number(entry.cuttDalali) || 0;
 
                     // Number formats
                     row.getCell(4).numFmt = '#,##0';
                     row.getCell(6).numFmt = '#,##0';
                     row.getCell(7).numFmt = '"₹ "#,##,##0.00';
+                    row.getCell(9).numFmt = '#,##0';
 
                     // Style: normal font, black thin borders, vertical middle on all cells
                     for (let c = 1; c <= 9; c++) {
@@ -1150,7 +1117,7 @@
                     row.getCell(6).alignment = { horizontal: 'right', vertical: 'middle' };
                     row.getCell(7).alignment = { horizontal: 'right', vertical: 'middle' };
                     row.getCell(8).alignment = { horizontal: 'left', vertical: 'middle' };
-                    row.getCell(9).alignment = { horizontal: 'left', vertical: 'middle' };
+                    row.getCell(9).alignment = { horizontal: 'right', vertical: 'middle' };
                 });
 
                 // TOTAL ROW — after all entries, bold
