@@ -412,11 +412,55 @@
         .btn-cancel:hover {
             background: #e2e8f0;
         }
+
+        /* ── Autocomplete floating popup (body-level, never clipped by table) ── */
+        #ac-popup {
+            position: fixed;
+            background: #fff;
+            border: 1.5px solid var(--primary-blue);
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 12px 32px rgba(26,86,219,0.18), 0 2px 8px rgba(0,0,0,0.08);
+            z-index: 99999;
+            max-height: 240px;
+            overflow-y: auto;
+            display: none;
+            min-width: 200px;
+        }
+        #ac-popup.open { display: block; }
+        .ac-item {
+            padding: 0.55rem 0.9rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: var(--text-color);
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.12s;
+        }
+        .ac-item:last-child { border-bottom: none; }
+        .ac-item:hover, .ac-item.active {
+            background: var(--blue-light-bg);
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+        .ac-item strong { color: var(--primary-blue); }
+        .ac-item-new {
+            padding: 0.5rem 0.9rem;
+            font-size: 0.82rem;
+            color: var(--primary-blue);
+            cursor: pointer;
+            border-top: 2px solid var(--blue-light-bg);
+            background: #f8faff;
+            font-style: italic;
+            letter-spacing: 0.01em;
+        }
+        .ac-item-new:hover { background: #eff6ff; }
     </style>
 </head>
 <body>
 
     <div id="toast">Message goes here</div>
+
+    <!-- Shared floating autocomplete popup — body-level, never clipped by table -->
+    <div id="ac-popup"></div>
 
     <!-- Confirmation Modal -->
     <div id="confirmModal" class="modal-overlay" style="display:none;">
@@ -534,11 +578,7 @@
 
         <!-- Entries Table -->
         <section class="table-section card">
-            <h2 class="card-title">Brokerage Entries
-                <span style="font-size:0.7rem; font-family:'DM Sans',sans-serif; font-weight:400; display:flex; gap:0.5rem;">
-                    <button onclick="clearCustomList('buyer')" style="background:none;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:0.7rem;color:#64748b;" title="Clear custom party names">Clear Parties</button>
-                </span>
-            </h2>
+            <h2 class="card-title">Brokerage Entries</h2>
             <table id="entriesTable">
                 <thead>
                     <tr>
@@ -597,63 +637,182 @@
         </div>
     </div>
 
-    <!-- Datalists removed — using dynamic <select> dropdowns now -->
+    <!-- Autocomplete-powered party & truck fields -->
 
     <script>
-        // State management
+        // ── State management ──────────────────────────────────────────
         let entries = [];
 
-        // Original default lists
-        const origBuyers = [];
-
-        // Active lists — loaded from localStorage if cleared, otherwise defaults + custom
-        // When user clears, we save an empty array as the active list
-        // When user adds new, it goes into the active list
-        function loadList(storageKey, origList) {
+        // Load/save helpers for localStorage lists
+        function loadList(storageKey) {
             const saved = localStorage.getItem(storageKey);
-            if (saved !== null) return JSON.parse(saved);
-            return [...origList]; // not cleared yet, use defaults
+            return saved !== null ? JSON.parse(saved) : [];
+        }
+        function saveList(storageKey, list) {
+            localStorage.setItem(storageKey, JSON.stringify(list));
+        }
+        function addToList(storageKey, list, value) {
+            const v = value.trim().toUpperCase();
+            if (v && !list.includes(v)) { list.push(v); saveList(storageKey, list); }
+            return v;
         }
 
-        let activeBuyers = loadList('tradebill_buyers', origBuyers);
+        let activeBuyers = loadList('tradebill_buyers');
+        let activeTrucks = loadList('tradebill_trucks');
 
         function getAllBuyers() { return activeBuyers; }
+        function getAllTrucks()  { return activeTrucks; }
 
-        // Generic handler for select dropdowns with +New option
-        function handleSelectChange(id, field, selectEl, activeList, storageKey, label) {
-            if (selectEl.value === '__NEW__') {
-                const newVal = prompt(`Enter new ${label}:`);
-                if (newVal && newVal.trim()) {
-                    const trimmed = newVal.trim().toUpperCase();
-                    if (!activeList.includes(trimmed)) {
-                        activeList.push(trimmed);
-                        localStorage.setItem(storageKey, JSON.stringify(activeList));
-                    }
-                    updateRow(id, field, trimmed);
-                } else {
-                    const entry = entries.find(e => e.id === id);
-                    selectEl.value = entry ? entry[field] : '';
-                }
-                renderTable();
-            } else {
-                updateRow(id, field, selectEl.value);
-            }
-        }
-
-        function handlePartyChange(id, selectEl) {
-            handleSelectChange(id, 'party', selectEl, activeBuyers, 'tradebill_buyers', 'party name');
-        }
-
-        // Clear ALL entries from a dropdown list
+        // Clear saved lists
         function clearCustomList(type) {
             if (type === 'buyer') {
-                if (!confirm(`Clear all ${activeBuyers.length} party names from dropdown?`)) return;
-                activeBuyers = [];
-                localStorage.setItem('tradebill_buyers', '[]');
+                if (!confirm(`Clear all ${activeBuyers.length} saved party names?`)) return;
+                activeBuyers = []; saveList('tradebill_buyers', []);
+            } else if (type === 'truck') {
+                if (!confirm(`Clear all ${activeTrucks.length} saved truck numbers?`)) return;
+                activeTrucks = []; saveList('tradebill_trucks', []);
             }
             renderTable();
-            showToast(`All ${type} entries cleared! Use "+ New" to add.`);
+            showToast(`Cleared! Names will be re-saved as you type them.`);
         }
+
+        // ── Autocomplete engine (shared body-level popup, never clipped by table) ──
+        // One singleton popup used for all inputs, positioned with getBoundingClientRect
+        const acPopup   = document.getElementById('ac-popup');
+        let acActiveInput  = null;   // the input currently using the popup
+        let acActiveList   = null;   // its list array
+        let acStorageKey   = null;   // its storage key
+        let acOnSelect     = null;   // its callback
+        let acHighlightIdx = -1;
+
+        // Hide popup when clicking outside
+        document.addEventListener('mousedown', e => {
+            if (e.target !== acActiveInput && !acPopup.contains(e.target)) {
+                acPopup.classList.remove('open');
+            }
+        });
+
+        // Reposition popup on scroll (close on scroll to avoid mis-alignment)
+        window.addEventListener('scroll', () => acPopup.classList.remove('open'), true);
+
+        function acPositionPopup(input) {
+            const r = input.getBoundingClientRect();
+            acPopup.style.left   = r.left   + 'px';
+            acPopup.style.top    = r.bottom + 'px';
+            acPopup.style.width  = Math.max(r.width, 220) + 'px';
+        }
+
+        function acBuildList(query) {
+            acPopup.innerHTML = '';
+            acHighlightIdx = -1;
+            const q = (query || '').toUpperCase();
+            const matches = q
+                ? acActiveList.filter(s => s.includes(q))
+                : [...acActiveList];
+
+            matches.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'ac-item';
+                // Bold the matching part
+                if (q) {
+                    const idx = item.indexOf(q);
+                    if (idx !== -1) {
+                        div.innerHTML =
+                            item.substring(0, idx) +
+                            '<strong>' + item.substring(idx, idx + q.length) + '</strong>' +
+                            item.substring(idx + q.length);
+                    } else {
+                        div.textContent = item;
+                    }
+                } else {
+                    div.textContent = item;
+                }
+                div.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    acSelect(item);
+                });
+                acPopup.appendChild(div);
+            });
+
+            // "Save as new" row — only when typed value isn't already in list
+            if (q && !acActiveList.includes(q)) {
+                const div = document.createElement('div');
+                div.className = 'ac-item-new';
+                div.textContent = `✚  Save "${q}" as new`;
+                div.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    const saved = addToList(acStorageKey, acActiveList, q);
+                    acSelect(saved);
+                });
+                acPopup.appendChild(div);
+            }
+
+            if (acPopup.children.length > 0) {
+                acPositionPopup(acActiveInput);
+                acPopup.classList.add('open');
+            } else {
+                acPopup.classList.remove('open');
+            }
+        }
+
+        function acSelect(value) {
+            if (acActiveInput) acActiveInput.value = value;
+            acPopup.classList.remove('open');
+            if (acOnSelect) acOnSelect(value);
+        }
+
+        function acHighlight(idx) {
+            const items = acPopup.querySelectorAll('.ac-item, .ac-item-new');
+            items.forEach((el, i) => el.classList.toggle('active', i === idx));
+        }
+
+        // makeAC — attaches autocomplete to an input element
+        // list: array ref, storageKey: localStorage key, onSelect: callback(value)
+        function makeAC(input, list, storageKey, onSelect) {
+            input.addEventListener('focus', () => {
+                acActiveInput  = input;
+                acActiveList   = list;
+                acStorageKey   = storageKey;
+                acOnSelect     = onSelect;
+                acBuildList(input.value);
+            });
+
+            input.addEventListener('input', () => {
+                input.value = input.value.toUpperCase();
+                if (acActiveInput === input) acBuildList(input.value);
+            });
+
+            input.addEventListener('keydown', e => {
+                if (!acPopup.classList.contains('open')) return;
+                const items = acPopup.querySelectorAll('.ac-item, .ac-item-new');
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    acHighlightIdx = Math.min(acHighlightIdx + 1, items.length - 1);
+                    acHighlight(acHighlightIdx);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    acHighlightIdx = Math.max(acHighlightIdx - 1, -1);
+                    acHighlight(acHighlightIdx);
+                } else if (e.key === 'Enter' && acHighlightIdx >= 0) {
+                    e.preventDefault();
+                    items[acHighlightIdx].dispatchEvent(new MouseEvent('mousedown'));
+                } else if (e.key === 'Escape') {
+                    acPopup.classList.remove('open');
+                }
+            });
+
+            input.addEventListener('blur', () => {
+                setTimeout(() => {
+                    acPopup.classList.remove('open');
+                    // Auto-save and commit whatever was typed
+                    const v = input.value.trim().toUpperCase();
+                    input.value = v;
+                    if (v && !list.includes(v)) addToList(storageKey, list, v);
+                    onSelect(v);
+                }, 160);
+            });
+        }
+
         
         // Draft save/load
         function saveDraft() {
@@ -730,24 +889,19 @@
         function renderTable() {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
-            
+
             entries.forEach((row, index) => {
                 const tr = document.createElement('tr');
+
                 tr.innerHTML = `
                     <td>${index + 1}</td>
                     <td><input type="date" value="${row.date}" data-row="${index}" data-col="0" onchange="updateRow(${row.id}, 'date', this.value)"></td>
-                    <td>
-                        <select data-row="${index}" data-col="1" onchange="handlePartyChange(${row.id}, this)">
-                            <option value="" ${!row.party ? 'selected' : ''}>-- Select --</option>
-                            ${getAllBuyers().map(b => `<option value="${b}" ${row.party === b ? 'selected' : ''}>${b}</option>`).join('')}
-                            <option value="__NEW__">+ New Party</option>
-                        </select>
-                    </td>
+                    <td><input type="text" id="party-ac-${row.id}" value="${row.party}" placeholder="Type party name…" data-row="${index}" data-col="1" autocomplete="off" style="text-transform:uppercase;"></td>
                     <td><input type="number" min="0" value="${row.rate}" data-row="${index}" data-col="2" onchange="updateRow(${row.id}, 'rate', this.value)"></td>
                     <td><input type="text" value="${row.billNo}" data-row="${index}" data-col="3" onchange="updateRow(${row.id}, 'billNo', this.value)"></td>
                     <td><input type="number" min="0" value="${row.weight}" data-row="${index}" data-col="4" oninput="handleWeightInput(${row.id}, this.value)"></td>
                     <td><input type="number" min="0" id="dalali-${row.id}" value="${row.dalali}" data-row="${index}" data-col="5" class="${row.autoCalc ? 'auto-calc' : ''}" onchange="overrideDalali(${row.id}, this.value)"></td>
-                    <td><input type="text" value="${row.truckNo}" data-row="${index}" data-col="6" placeholder="RJ09GC9346" style="color:#000;" oninput="this.value=this.value.toUpperCase()" onchange="updateRow(${row.id}, 'truckNo', this.value.toUpperCase())"></td>
+                    <td><input type="text" id="truck-ac-${row.id}" value="${row.truckNo}" placeholder="e.g. RJ27GC5554" data-row="${index}" data-col="6" autocomplete="off" style="text-transform:uppercase; color:#000;"></td>
                     <td><input type="number" min="0" value="${row.cuttDalali}" data-row="${index}" data-col="7" onchange="updateRow(${row.id}, 'cuttDalali', this.value)"></td>
                     <td class="table-actions">
                         <button class="icon-btn" onclick="duplicateRow(${row.id})" title="Duplicate">📋</button>
@@ -755,9 +909,23 @@
                     </td>
                 `;
                 tbody.appendChild(tr);
+
+                // Attach autocomplete to Party Name cell
+                const partyInput = document.getElementById(`party-ac-${row.id}`);
+                makeAC(partyInput, activeBuyers, 'tradebill_buyers', value => {
+                    updateRow(row.id, 'party', value);
+                });
+
+                // Attach autocomplete to Truck No cell
+                const truckInput = document.getElementById(`truck-ac-${row.id}`);
+                makeAC(truckInput, activeTrucks, 'tradebill_trucks', value => {
+                    updateRow(row.id, 'truckNo', value);
+                });
             });
+
             updateSummary();
-            // Update main party name datalist
+
+            // Update main Bill-To party datalist
             const mainDl = document.getElementById('buyersMainList');
             if (mainDl) {
                 mainDl.innerHTML = getAllBuyers().map(b => `<option value="${b}">`).join('');
