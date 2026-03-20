@@ -916,14 +916,14 @@
                 // Column widths — generous so nothing gets hidden/cut off
                 ws.columns = [
                     { width: 13 },  // A - SL / Date (DD-MM-YYYY)
-                    { width: 18 },  // B - DATE / Type (MAIZE BROKERAGE)
-                    { width: 32 },  // C - NAME (long names like HARSHIL CHAUDHARY CHAUDHARY)
-                    { width: 16 },  // D - RATE (up to 10-digit numbers)
-                    { width: 14 },  // E - BILL NO
-                    { width: 18 },  // F - WEIGHT / Amount (large numbers)
-                    { width: 22 },  // G - DALALI / Payment (₹ 15-digit with commas)
-                    { width: 16 },  // H - TRUCK NO
-                    { width: 22 },  // I - CUTT DALALI / Balance (₹ 15-digit with commas)
+                    { width: 20 },  // B - DATE / Type (MAIZE BROKERAGE)
+                    { width: 34 },  // C - NAME (long names)
+                    { width: 24 },  // D - RATE (15-digit with commas)
+                    { width: 16 },  // E - BILL NO
+                    { width: 32 },  // F - WEIGHT / Amount (20-digit with commas)
+                    { width: 30 },  // G - DALALI / Payment (₹ 15-digit with commas + .00)
+                    { width: 18 },  // H - TRUCK NO
+                    { width: 30 },  // I - CUTT DALALI / Balance (₹ 15-digit with commas + .00)
                 ];
 
                 // Reusable styles
@@ -1073,7 +1073,7 @@
                     const cell = r14.getCell(c);
                     cell.font = normalFont;
                     cell.border = thinBorder;
-                    cell.alignment = { vertical: 'middle' };
+                    cell.alignment = { vertical: 'middle', shrinkToFit: true };
                 });
 
                 // ROW 15: Total row
@@ -1092,7 +1092,7 @@
                     const cell = r15.getCell(c);
                     if (!cell.font) cell.font = normalFont;
                     cell.border = thinBorder;
-                    cell.alignment = { vertical: 'middle' };
+                    cell.alignment = { vertical: 'middle', shrinkToFit: true };
                 });
 
                 // ROW 16: Reminder
@@ -1168,15 +1168,15 @@
                         cell.border = thinBorder;
                         cell.alignment = { vertical: 'middle', horizontal: 'left' };
                     }
-                    // Override alignment for specific columns
-                    row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-                    row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
-                    row.getCell(4).alignment = { horizontal: 'right', vertical: 'middle' };
-                    row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
-                    row.getCell(6).alignment = { horizontal: 'right', vertical: 'middle' };
-                    row.getCell(7).alignment = { horizontal: 'right', vertical: 'middle' };
-                    row.getCell(8).alignment = { horizontal: 'left', vertical: 'middle' };
-                    row.getCell(9).alignment = { horizontal: 'right', vertical: 'middle' };
+                    // Override alignment — shrinkToFit prevents ### on any overflow
+                    row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
+                    row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
+                    row.getCell(4).alignment = { horizontal: 'right', vertical: 'middle', shrinkToFit: true };
+                    row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
+                    row.getCell(6).alignment = { horizontal: 'right', vertical: 'middle', shrinkToFit: true };
+                    row.getCell(7).alignment = { horizontal: 'right', vertical: 'middle', shrinkToFit: true };
+                    row.getCell(8).alignment = { horizontal: 'left', vertical: 'middle', shrinkToFit: true };
+                    row.getCell(9).alignment = { horizontal: 'right', vertical: 'middle', shrinkToFit: true };
                 });
 
                 // TOTAL ROW — after all entries, bold
@@ -1197,10 +1197,10 @@
                     const cell = totalRow.getCell(c);
                     cell.font = boldFont;
                     cell.border = thinBorder;
-                    cell.alignment = { vertical: 'middle' };
+                    cell.alignment = { vertical: 'middle', shrinkToFit: true };
                 }
-                totalRow.getCell(6).alignment = { horizontal: 'right', vertical: 'middle' };
-                totalRow.getCell(7).alignment = { horizontal: 'right', vertical: 'middle' };
+                totalRow.getCell(6).alignment = { horizontal: 'right', vertical: 'middle', shrinkToFit: true };
+                totalRow.getCell(7).alignment = { horizontal: 'right', vertical: 'middle', shrinkToFit: true };
 
                 // Period line after total
                 const periodRn = totalRn + 2;
