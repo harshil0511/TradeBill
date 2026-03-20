@@ -915,15 +915,15 @@
 
                 // Column widths — generous so nothing gets hidden/cut off
                 ws.columns = [
-                    { width: 13 },  // A - SL / Date (needs room for DD-MM-YYYY)
-                    { width: 15 },  // B - DATE
-                    { width: 30 },  // C - NAME
-                    { width: 10 },  // D - RATE
-                    { width: 12 },  // E - BILL NO
-                    { width: 13 },  // F - WEIGHT
-                    { width: 15 },  // G - DALALI
+                    { width: 13 },  // A - SL / Date (DD-MM-YYYY)
+                    { width: 18 },  // B - DATE / Type (MAIZE BROKERAGE)
+                    { width: 32 },  // C - NAME (long names like HARSHIL CHAUDHARY CHAUDHARY)
+                    { width: 16 },  // D - RATE (up to 10-digit numbers)
+                    { width: 14 },  // E - BILL NO
+                    { width: 18 },  // F - WEIGHT / Amount (large numbers)
+                    { width: 22 },  // G - DALALI / Payment (₹ 15-digit with commas)
                     { width: 16 },  // H - TRUCK NO
-                    { width: 16 },  // I - CUTT DALALI
+                    { width: 22 },  // I - CUTT DALALI / Balance (₹ 15-digit with commas)
                 ];
 
                 // Reusable styles
