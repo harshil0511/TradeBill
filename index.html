@@ -170,7 +170,7 @@
 
         .grid-form {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: 1fr 1fr;
             gap: 1rem;
         }
 
@@ -506,24 +506,28 @@
             <div class="grid-form">
                 <div class="form-group">
                     <label>Bill Number</label>
-                    <input type="text" id="billNo" placeholder="Enter Bill No.">
+                    <input type="text" id="billNo" placeholder="Enter Bill No." data-billto="0" data-brow="0" data-bcol="0">
                 </div>
                 <div class="form-group">
                     <label>Party Name</label>
-                    <input type="text" id="partyName" list="buyersMainList" placeholder="Enter Party Name">
+                    <input type="text" id="partyName" list="buyersMainList" placeholder="Enter Party Name" data-billto="1" data-brow="0" data-bcol="1">
                     <datalist id="buyersMainList"></datalist>
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
                     <label>Party Address</label>
-                    <input type="text" id="partyAddress" placeholder="Optional Address">
+                    <input type="text" id="partyAddress" placeholder="Optional Address" data-billto="2" data-brow="1" data-bcol="0">
                 </div>
                 <div class="form-group">
                     <label>From Date</label>
-                    <input type="date" id="fromDate">
+                    <input type="date" id="fromDate" data-billto="3" data-brow="2" data-bcol="0">
                 </div>
                 <div class="form-group">
                     <label>To Date</label>
-                    <input type="date" id="toDate">
+                    <input type="date" id="toDate" data-billto="4" data-brow="2" data-bcol="1">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Brokerage Type</label>
+                    <input type="text" id="brokerageType" placeholder="e.g. MAIZE BROKERAGE" oninput="this.value=this.value.toUpperCase()" data-billto="5" data-brow="3" data-bcol="0">
                 </div>
             </div>
         </section>
@@ -663,6 +667,7 @@
                 billNo: document.getElementById('billNo').value,
                 partyName: document.getElementById('partyName').value,
                 partyAddress: document.getElementById('partyAddress').value,
+                brokerageType: document.getElementById('brokerageType').value,
                 fromDate: document.getElementById('fromDate').value,
                 toDate: document.getElementById('toDate').value,
                 entries
@@ -685,6 +690,7 @@
                 document.getElementById('billNo').value = draft.billNo || '';
                 document.getElementById('partyName').value = draft.partyName || '';
                 document.getElementById('partyAddress').value = draft.partyAddress || '';
+                document.getElementById('brokerageType').value = draft.brokerageType || '';
                 document.getElementById('fromDate').value = draft.fromDate || '';
                 document.getElementById('toDate').value = draft.toDate || '';
                 entries = draft.entries || [];
@@ -737,12 +743,12 @@
                             <option value="__NEW__">+ New Party</option>
                         </select>
                     </td>
-                    <td><input type="number" value="${row.rate}" data-row="${index}" data-col="2" onchange="updateRow(${row.id}, 'rate', this.value)"></td>
+                    <td><input type="number" min="0" value="${row.rate}" data-row="${index}" data-col="2" onchange="updateRow(${row.id}, 'rate', this.value)"></td>
                     <td><input type="text" value="${row.billNo}" data-row="${index}" data-col="3" onchange="updateRow(${row.id}, 'billNo', this.value)"></td>
-                    <td><input type="number" value="${row.weight}" data-row="${index}" data-col="4" oninput="handleWeightInput(${row.id}, this.value)"></td>
-                    <td><input type="number" id="dalali-${row.id}" value="${row.dalali}" data-row="${index}" data-col="5" class="${row.autoCalc ? 'auto-calc' : ''}" onchange="overrideDalali(${row.id}, this.value)"></td>
+                    <td><input type="number" min="0" value="${row.weight}" data-row="${index}" data-col="4" oninput="handleWeightInput(${row.id}, this.value)"></td>
+                    <td><input type="number" min="0" id="dalali-${row.id}" value="${row.dalali}" data-row="${index}" data-col="5" class="${row.autoCalc ? 'auto-calc' : ''}" onchange="overrideDalali(${row.id}, this.value)"></td>
                     <td><input type="text" value="${row.truckNo}" data-row="${index}" data-col="6" placeholder="RJ09GC9346" style="color:#000;" oninput="this.value=this.value.toUpperCase()" onchange="updateRow(${row.id}, 'truckNo', this.value.toUpperCase())"></td>
-                    <td><input type="number" value="${row.cuttDalali}" data-row="${index}" data-col="7" onchange="updateRow(${row.id}, 'cuttDalali', this.value)"></td>
+                    <td><input type="number" min="0" value="${row.cuttDalali}" data-row="${index}" data-col="7" onchange="updateRow(${row.id}, 'cuttDalali', this.value)"></td>
                     <td class="table-actions">
                         <button class="icon-btn" onclick="duplicateRow(${row.id})" title="Duplicate">📋</button>
                         <button class="icon-btn" onclick="deleteRow(${row.id})" title="Delete">🗑️</button>
@@ -758,10 +764,19 @@
             }
         }
 
+        // Clamp negative numbers to 0 for numeric fields
+        const numericFields = ['rate', 'weight', 'dalali', 'cuttDalali'];
+        function clampPositive(field, value) {
+            if (numericFields.includes(field) && Number(value) < 0) return 0;
+            return value;
+        }
+
         function updateRow(id, field, value) {
             const index = entries.findIndex(e => e.id === id);
             if (index !== -1) {
+                value = clampPositive(field, value);
                 entries[index][field] = value;
+                if (numericFields.includes(field)) renderTable();
                 updateSummary();
             }
         }
@@ -769,6 +784,7 @@
         function handleWeightInput(id, value) {
             const index = entries.findIndex(e => e.id === id);
             if (index !== -1) {
+                if (Number(value) < 0) { value = 0; renderTable(); }
                 entries[index].weight = value;
                 updateSummary();
             }
@@ -778,6 +794,7 @@
             // When user manually types a dalali, mark it as overridden (no green)
             const index = entries.findIndex(e => e.id === id);
             if (index !== -1) {
+                if (Number(value) < 0) { value = 0; renderTable(); }
                 entries[index].dalali = value;
                 entries[index].autoCalc = false;
                 document.getElementById(`dalali-${id}`).classList.remove('auto-calc');
@@ -823,6 +840,7 @@
                 document.getElementById('billNo').value = '';
                 document.getElementById('partyName').value = '';
                 document.getElementById('partyAddress').value = '';
+                document.getElementById('brokerageType').value = '';
                 document.getElementById('fromDate').value = '';
                 const today = new Date().toISOString().split('T')[0];
                 document.getElementById('toDate').value = today;
@@ -892,6 +910,7 @@
                 const brokerBranch = document.getElementById('brokerBranch').value;
                 const partyName = document.getElementById('partyName').value || '';
                 const billNo = document.getElementById('billNo').value || '';
+                const brokerageType = document.getElementById('brokerageType').value || '';
                 const fromDate = document.getElementById('fromDate').value || '';
                 const toDate = document.getElementById('toDate').value || '';
                 // Filter entries by From-To date period
@@ -913,18 +932,45 @@
                 const workbook = new ExcelJS.Workbook();
                 const ws = workbook.addWorksheet('Invoice');
 
-                // Column widths — generous so nothing gets hidden/cut off
-                ws.columns = [
-                    { width: 13 },  // A - SL / Date (DD-MM-YYYY)
-                    { width: 20 },  // B - DATE / Type (MAIZE BROKERAGE)
-                    { width: 34 },  // C - NAME (long names)
-                    { width: 24 },  // D - RATE (15-digit with commas)
-                    { width: 16 },  // E - BILL NO
-                    { width: 32 },  // F - WEIGHT / Amount (20-digit with commas)
-                    { width: 30 },  // G - DALALI / Payment (₹ 15-digit with commas + .00)
-                    { width: 18 },  // H - TRUCK NO
-                    { width: 30 },  // I - CUTT DALALI / Balance (₹ 15-digit with commas + .00)
-                ];
+                // Dynamic column widths — auto-fit based on actual data content
+                // Helper: format number to Indian locale string to measure display length
+                function indiaNumLen(n) { return n ? n.toLocaleString('en-IN').length : 0; }
+                function rupeeNumLen(n) { return n ? ('₹ ' + n.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})).length : 0; }
+
+                // Scan all entries to find max content width per column
+                const headerLens = [6, 6, 6, 6, 8, 8, 8, 10, 12]; // SL,DATE,NAME,RATE,BILL NO,WEIGHT,DALALI,TRUCK NO,CUTT DALALI
+                const maxLens = [...headerLens]; // start with header lengths as minimum
+
+                filteredEntries.forEach((e, idx) => {
+                    maxLens[0] = Math.max(maxLens[0], String(idx + 1).length);
+                    maxLens[1] = Math.max(maxLens[1], 10); // DD-MM-YYYY = 10
+                    maxLens[2] = Math.max(maxLens[2], (e.party || '').length);
+                    maxLens[3] = Math.max(maxLens[3], indiaNumLen(Number(e.rate || 0)));
+                    maxLens[4] = Math.max(maxLens[4], (e.billNo || '').length);
+                    maxLens[5] = Math.max(maxLens[5], indiaNumLen(Number(e.weight || 0)));
+                    maxLens[6] = Math.max(maxLens[6], rupeeNumLen(Number(e.dalali || 0)));
+                    maxLens[7] = Math.max(maxLens[7], (e.truckNo || '').length);
+                    maxLens[8] = Math.max(maxLens[8], indiaNumLen(Number(e.cuttDalali || 0)));
+                });
+
+                // Also check totals row
+                maxLens[5] = Math.max(maxLens[5], indiaNumLen(totalWeight));
+                maxLens[6] = Math.max(maxLens[6], rupeeNumLen(totalDalali));
+
+                // Also check summary table (Amount/Balance = totalDalali with ₹ format)
+                maxLens[6] = Math.max(maxLens[6], rupeeNumLen(totalDalali));
+
+                // Min and max width limits per column
+                const minWidths = [6, 12, 14, 8, 10, 10, 12, 12, 12];
+                const maxWidths = [10, 20, 34, 28, 20, 34, 34, 20, 34];
+
+                // Calculate final widths: content length + 4 padding, clamped between min/max
+                const colWidths = maxLens.map((len, i) => {
+                    const w = len + 4; // padding for borders + breathing room
+                    return Math.max(minWidths[i], Math.min(maxWidths[i], w));
+                });
+
+                ws.columns = colWidths.map(w => ({ width: w }));
 
                 // Reusable styles
                 const darkBlueFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
@@ -1064,7 +1110,7 @@
                 ws.mergeCells('H14:I14');
                 const r14 = ws.getRow(14);
                 r14.getCell(1).value = formatDate(fromDate);
-                r14.getCell(2).value = 'MAIZE BROKERAGE';
+                r14.getCell(2).value = brokerageType;
                 r14.getCell(6).value = totalDalali;
                 r14.getCell(6).numFmt = '"₹ "#,##,##0.00';
                 r14.getCell(8).value = totalDalali;
@@ -1073,7 +1119,7 @@
                     const cell = r14.getCell(c);
                     cell.font = normalFont;
                     cell.border = thinBorder;
-                    cell.alignment = { vertical: 'middle', shrinkToFit: true };
+                    cell.alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
                 });
 
                 // ROW 15: Total row
@@ -1081,7 +1127,7 @@
                 ws.mergeCells('H15:I15');
                 const r15 = ws.getRow(15);
                 r15.getCell(1).value = formatDate(toDate);
-                r15.getCell(2).value = 'MAIZE BROKERAGE';
+                r15.getCell(2).value = brokerageType;
                 r15.getCell(2).font = boldFont;
                 r15.getCell(7).value = 'Total';
                 r15.getCell(7).font = boldFont;
@@ -1092,7 +1138,7 @@
                     const cell = r15.getCell(c);
                     if (!cell.font) cell.font = normalFont;
                     cell.border = thinBorder;
-                    cell.alignment = { vertical: 'middle', shrinkToFit: true };
+                    cell.alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
                 });
 
                 // ROW 16: Reminder
@@ -1171,12 +1217,12 @@
                     // Override alignment — shrinkToFit prevents ### on any overflow
                     row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
                     row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
-                    row.getCell(4).alignment = { horizontal: 'right', vertical: 'middle', shrinkToFit: true };
+                    row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
                     row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
-                    row.getCell(6).alignment = { horizontal: 'right', vertical: 'middle', shrinkToFit: true };
-                    row.getCell(7).alignment = { horizontal: 'right', vertical: 'middle', shrinkToFit: true };
-                    row.getCell(8).alignment = { horizontal: 'left', vertical: 'middle', shrinkToFit: true };
-                    row.getCell(9).alignment = { horizontal: 'right', vertical: 'middle', shrinkToFit: true };
+                    row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
+                    row.getCell(7).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
+                    row.getCell(8).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
+                    row.getCell(9).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
                 });
 
                 // TOTAL ROW — after all entries, bold
@@ -1197,15 +1243,13 @@
                     const cell = totalRow.getCell(c);
                     cell.font = boldFont;
                     cell.border = thinBorder;
-                    cell.alignment = { vertical: 'middle', shrinkToFit: true };
+                    cell.alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
                 }
-                totalRow.getCell(6).alignment = { horizontal: 'right', vertical: 'middle', shrinkToFit: true };
-                totalRow.getCell(7).alignment = { horizontal: 'right', vertical: 'middle', shrinkToFit: true };
 
                 // Period line after total
                 const periodRn = totalRn + 2;
                 ws.mergeCells(`A${periodRn}:I${periodRn}`);
-                ws.getCell(`A${periodRn}`).value = `DATE-${formatDate(fromDate)} TO DATE-${formatDate(toDate)}  MAIZE BROKERAGE`;
+                ws.getCell(`A${periodRn}`).value = `DATE-${formatDate(fromDate)} TO DATE-${formatDate(toDate)}  ${brokerageType}`;
                 ws.getCell(`A${periodRn}`).font = normalFont;
 
                 // Page setup
@@ -1259,6 +1303,71 @@
             // Use setTimeout to let renderTable finish DOM update
             setTimeout(() => focusCell(newRow, col), 0);
         }
+
+        // Bill To section keyboard navigation: Enter, Arrow keys
+        const billToOrder = ['billNo', 'partyName', 'partyAddress', 'fromDate', 'toDate', 'brokerageType'];
+        // Grid layout for arrow navigation: [row][col] = field id
+        const billToGrid = [
+            ['billNo', 'partyName'],
+            ['partyAddress'],
+            ['fromDate', 'toDate'],
+            ['brokerageType']
+        ];
+        function focusBillTo(row, col) {
+            const r = Math.max(0, Math.min(row, billToGrid.length - 1));
+            const c = Math.max(0, Math.min(col, billToGrid[r].length - 1));
+            document.getElementById(billToGrid[r][c]).focus();
+        }
+        document.querySelectorAll('[data-billto]').forEach(input => {
+            input.addEventListener('keydown', function(e) {
+                const brow = parseInt(this.dataset.brow);
+                const bcol = parseInt(this.dataset.bcol);
+                const idx = parseInt(this.dataset.billto);
+                let handled = false;
+
+                switch (e.key) {
+                    case 'Enter':
+                        if (idx < billToOrder.length - 1) {
+                            document.getElementById(billToOrder[idx + 1]).focus();
+                        } else {
+                            const firstInput = document.querySelector('#entriesTable tbody tr:first-child input, #entriesTable tbody tr:first-child select');
+                            if (firstInput) firstInput.focus();
+                        }
+                        handled = true;
+                        break;
+                    case 'ArrowRight':
+                        if (bcol < billToGrid[brow].length - 1) {
+                            focusBillTo(brow, bcol + 1);
+                        } else if (brow < billToGrid.length - 1) {
+                            focusBillTo(brow + 1, 0);
+                        }
+                        handled = true;
+                        break;
+                    case 'ArrowLeft':
+                        if (bcol > 0) {
+                            focusBillTo(brow, bcol - 1);
+                        } else if (brow > 0) {
+                            const prevRow = billToGrid[brow - 1];
+                            focusBillTo(brow - 1, prevRow.length - 1);
+                        }
+                        handled = true;
+                        break;
+                    case 'ArrowDown':
+                        if (brow < billToGrid.length - 1) {
+                            focusBillTo(brow + 1, Math.min(bcol, billToGrid[brow + 1].length - 1));
+                        }
+                        handled = true;
+                        break;
+                    case 'ArrowUp':
+                        if (brow > 0) {
+                            focusBillTo(brow - 1, Math.min(bcol, billToGrid[brow - 1].length - 1));
+                        }
+                        handled = true;
+                        break;
+                }
+                if (handled) e.preventDefault();
+            });
+        });
 
         document.getElementById('entriesTable').addEventListener('keydown', function(e) {
             const target = e.target;
@@ -1334,6 +1443,24 @@
                         addRowAndFocus(1);
                     }
                     handled = true;
+                    break;
+
+                case 'Delete':
+                case 'Backspace':
+                    // Only delete entire row if ALL data fields are empty and input is empty
+                    if (target.value === '' || (isSelect && target.value === '')) {
+                        const entry = entries[row];
+                        const isEmpty = !entry.party && !entry.rate && !entry.billNo &&
+                            !entry.weight && !entry.dalali && !entry.truckNo && !entry.cuttDalali;
+                        if (isEmpty && entries.length > 1) {
+                            entries.splice(row, 1);
+                            renderTable();
+                            // Jump to previous row if exists, else stay at row 0
+                            const jumpRow = row > 0 ? row - 1 : 0;
+                            setTimeout(() => focusCell(jumpRow, col), 0);
+                            handled = true;
+                        }
+                    }
                     break;
             }
 
