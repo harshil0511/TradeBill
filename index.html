@@ -453,6 +453,107 @@
             letter-spacing: 0.01em;
         }
         .ac-item-new:hover { background: #eff6ff; }
+
+        /* --- Drafts Panel --- */
+        .drafts-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100%;
+            background: white;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            z-index: 1000;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .drafts-panel.open {
+            right: 0;
+        }
+        .drafts-header {
+            padding: 1.5rem;
+            background: var(--dark-blue);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .drafts-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .draft-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f8fafc;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .draft-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+            border-color: var(--primary-blue);
+        }
+        .draft-name {
+            font-weight: 700;
+            color: var(--dark-blue);
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+        .draft-meta {
+            font-size: 0.75rem;
+            color: var(--muted-label);
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+        .draft-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn-draft-load {
+            flex: 1;
+            background: var(--primary-blue);
+            color: white;
+            font-size: 0.8rem;
+            padding: 0.4rem;
+        }
+        .btn-draft-del {
+            background: #fee2e2;
+            color: #ef4444;
+            padding: 0.4rem 0.6rem;
+        }
+        .drafts-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 999;
+            display: none;
+        }
+        .drafts-overlay.open { display: block; }
+
+        .badge {
+            background: var(--gold-highlight);
+            color: var(--dark-blue);
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 800;
+            margin-left: 4px;
+        }
+        .btn-drafts-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-drafts-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -483,6 +584,9 @@
             <button class="btn btn-new" onclick="confirmNewBill()">
                 <span>+</span> New Bill
             </button>
+            <button class="btn btn-drafts-toggle" onclick="toggleDraftsPanel()">
+                <span>📂</span> Drafts <span id="draftsBadge" class="badge">0</span>
+            </button>
             <button class="btn btn-new" onclick="saveDraft()">
                 <span>💾</span> Save Draft
             </button>
@@ -492,6 +596,21 @@
         </div>
     </header>
 
+    <!-- Drafts Drawer -->
+    <div id="draftsOverlay" class="drafts-overlay" onclick="toggleDraftsPanel()"></div>
+    <div id="draftsPanel" class="drafts-panel">
+        <div class="drafts-header">
+            <h3>Saved Drafts</h3>
+            <button class="icon-btn" onclick="toggleDraftsPanel()" style="color:white; font-size:1.5rem;">×</button>
+        </div>
+        <div id="draftsList" class="drafts-list">
+            <!-- Drafts injected here -->
+        </div>
+        <div style="padding: 1rem; border-top: 1px solid var(--border-color); display: flex; gap: 0.5rem;">
+            <button class="btn btn-cancel" style="flex:1; justify-content: center;" onclick="clearAllDrafts()">🗑 Clear All</button>
+        </div>
+    </div>
+
     <main>
         <!-- Broker Details Card -->
         <section class="card">
@@ -499,47 +618,51 @@
             <div class="grid-form">
                 <div class="form-group">
                     <label>Broker Name</label>
-                    <input type="text" id="brokerName" value="MAHESHBHAI BHIKHABHAI CHAUDHARI">
+                    <input type="text" id="brokerName">
                 </div>
                 <div class="form-group">
                     <label>Address</label>
-                    <input type="text" id="brokerAddress" value="RAJPUR(VAD), TA-VADNAGAR">
+                    <input type="text" id="brokerAddress">
                 </div>
                 <div class="form-group">
                     <label>District/State</label>
-                    <input type="text" id="brokerDistrict" value="DIS-MAHESANA, GUJARAT">
+                    <input type="text" id="brokerDistrict">
                 </div>
                 <div class="form-group">
                     <label>PIN</label>
-                    <input type="text" id="brokerPin" value="384355">
+                    <input type="text" id="brokerPin">
                 </div>
                 <div class="form-group">
                     <label>Phone 1</label>
-                    <input type="text" id="brokerPhone1" value="9429319065">
+                    <input type="text" id="brokerPhone1">
                 </div>
                 <div class="form-group">
                     <label>Phone 2</label>
-                    <input type="text" id="brokerPhone2" value="9714319065">
+                    <input type="text" id="brokerPhone2">
                 </div>
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" id="brokerEmail" value="maheshrajpur@gmail.com">
+                    <input type="email" id="brokerEmail">
                 </div>
                 <div class="form-group">
                     <label>PAN No.</label>
-                    <input type="text" id="brokerPan" value="ATUPC2709D">
+                    <input type="text" id="brokerPan">
                 </div>
                 <div class="form-group">
                     <label>A/C Number</label>
-                    <input type="text" id="brokerAccount" value="221710310000016">
+                    <input type="text" id="brokerAccount">
                 </div>
                 <div class="form-group">
                     <label>IFSC</label>
-                    <input type="text" id="brokerIfsc" value="BKID0002217">
+                    <input type="text" id="brokerIfsc">
                 </div>
                 <div class="form-group">
                     <label>Branch</label>
-                    <input type="text" id="brokerBranch" value="VADNAGAR">
+                    <input type="text" id="brokerBranch">
+                </div>
+                <div class="form-group">
+                    <label>Bank Name</label>
+                    <input type="text" id="brokerBank">
                 </div>
             </div>
         </section>
@@ -787,16 +910,25 @@
                 const items = acPopup.querySelectorAll('.ac-item, .ac-item-new');
                 if (e.key === 'ArrowDown') {
                     e.preventDefault();
+                    e.stopPropagation(); // Stop table navigation
                     acHighlightIdx = Math.min(acHighlightIdx + 1, items.length - 1);
                     acHighlight(acHighlightIdx);
+                    items[acHighlightIdx]?.scrollIntoView({ block: 'nearest' });
                 } else if (e.key === 'ArrowUp') {
                     e.preventDefault();
-                    acHighlightIdx = Math.max(acHighlightIdx - 1, -1);
+                    e.stopPropagation(); // Stop table navigation
+                    acHighlightIdx = Math.max(acHighlightIdx - 1, 0);
                     acHighlight(acHighlightIdx);
-                } else if (e.key === 'Enter' && acHighlightIdx >= 0) {
-                    e.preventDefault();
-                    items[acHighlightIdx].dispatchEvent(new MouseEvent('mousedown'));
+                    items[acHighlightIdx]?.scrollIntoView({ block: 'nearest' });
+                } else if (e.key === 'Enter') {
+                    if (acHighlightIdx >= 0) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        items[acHighlightIdx].dispatchEvent(new MouseEvent('mousedown'));
+                    }
                 } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
                     acPopup.classList.remove('open');
                 }
             });
@@ -814,14 +946,55 @@
         }
 
         
-        // Draft save/load
+        // --- Multi-Draft System ---
+        function toggleDraftsPanel() {
+            const panel = document.getElementById('draftsPanel');
+            const overlay = document.getElementById('draftsOverlay');
+            const isOpen = panel.classList.contains('open');
+            
+            if (!isOpen) {
+                renderDraftsList();
+                panel.classList.add('open');
+                overlay.classList.add('open');
+            } else {
+                panel.classList.remove('open');
+                overlay.classList.remove('open');
+            }
+        }
+
+        function getDraftKeys() {
+            return Object.keys(localStorage).filter(k => k.startsWith('tradebill_draft_V2_'));
+        }
+
+        function updateDraftsBadge() {
+            const keys = getDraftKeys();
+            document.getElementById('draftsBadge').innerText = keys.length;
+        }
+
         function saveDraft() {
+            const partyName = document.getElementById('partyName').value.trim().toUpperCase();
+            const billNo = document.getElementById('billNo').value.trim().toUpperCase();
+            const brokerageType = document.getElementById('brokerageType').value.trim().toUpperCase() || 'BROKERAGE';
+
+            if (!partyName) {
+                showToast('Please enter a Party Name to save draft');
+                return;
+            }
+
+            // Create a unique key for this specific bill
+            const draftId = `${partyName}_${billNo || 'NOBILL'}`.replace(/[^A-Z0-9]/g, '_');
+            const storageKey = `tradebill_draft_V2_${draftId}`;
+
             const brokerFields = ['brokerName','brokerAddress','brokerDistrict','brokerPin',
                 'brokerPhone1','brokerPhone2','brokerEmail','brokerPan',
-                'brokerAccount','brokerIfsc','brokerBranch'];
+                'brokerAccount','brokerIfsc','brokerBranch','brokerBank'];
             const broker = {};
             brokerFields.forEach(id => { broker[id] = document.getElementById(id).value; });
+
             const draft = {
+                key: storageKey,
+                draftName: `${brokerageType} — ${partyName}`,
+                savedAt: new Date().toLocaleString(),
                 broker,
                 billNo: document.getElementById('billNo').value,
                 partyName: document.getElementById('partyName').value,
@@ -831,13 +1004,49 @@
                 toDate: document.getElementById('toDate').value,
                 entries
             };
-            localStorage.setItem('tradebill_draft', JSON.stringify(draft));
-            showToast('Draft saved successfully!');
+
+            localStorage.setItem(storageKey, JSON.stringify(draft));
+            showToast(`Draft Saved: ${draft.draftName}`);
+            updateDraftsBadge();
+            if (document.getElementById('draftsPanel').classList.contains('open')) {
+                renderDraftsList();
+            }
         }
 
-        function loadDraft() {
-            const saved = localStorage.getItem('tradebill_draft');
-            if (!saved) return false;
+        function renderDraftsList() {
+            const listContainer = document.getElementById('draftsList');
+            const keys = getDraftKeys().sort((a, b) => {
+                const da = JSON.parse(localStorage.getItem(a)).savedAt;
+                const db = JSON.parse(localStorage.getItem(b)).savedAt;
+                return new Date(db) - new Date(da); // Newest first
+            });
+
+            listContainer.innerHTML = '';
+
+            if (keys.length === 0) {
+                listContainer.innerHTML = '<div style="text-align:center; color:var(--muted-label); margin-top:2rem;">No saved drafts found.</div>';
+                return;
+            }
+
+            keys.forEach(key => {
+                const draft = JSON.parse(localStorage.getItem(key));
+                const card = document.createElement('div');
+                card.className = 'draft-card';
+                card.innerHTML = `
+                    <span class="draft-name">${draft.draftName}</span>
+                    <span class="draft-meta">Bill: ${draft.billNo || 'N/A'} • ${draft.savedAt}</span>
+                    <div class="draft-actions">
+                        <button class="btn btn-draft-load" onclick="loadSpecificDraft('${key}')">📂 Load</button>
+                        <button class="btn btn-draft-del" onclick="deleteDraft('${key}')">🗑</button>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        function loadSpecificDraft(key) {
+            const saved = localStorage.getItem(key);
+            if (!saved) return;
             try {
                 const draft = JSON.parse(saved);
                 if (draft.broker) {
@@ -853,14 +1062,55 @@
                 document.getElementById('fromDate').value = draft.fromDate || '';
                 document.getElementById('toDate').value = draft.toDate || '';
                 entries = draft.entries || [];
+                
                 if (entries.length === 0) addRow();
                 else renderTable();
-                return true;
-            } catch(e) { return false; }
+                
+                toggleDraftsPanel();
+                showToast(`Loaded Draft: ${draft.draftName}`);
+            } catch(e) { 
+                showToast('Error loading draft');
+            }
+        }
+
+        function deleteDraft(key) {
+            if (confirm('Delete this draft?')) {
+                localStorage.removeItem(key);
+                renderDraftsList();
+                updateDraftsBadge();
+            }
+        }
+
+        function clearAllDrafts() {
+            if (confirm('Are you sure you want to delete ALL saved drafts? This cannot be undone.')) {
+                getDraftKeys().forEach(key => localStorage.removeItem(key));
+                renderDraftsList();
+                updateDraftsBadge();
+                showToast('All drafts cleared');
+            }
+        }
+
+        // Keep original loadDraft for auto-loading last session if needed (optional, keeping for compatibility)
+        function loadDraft() {
+            // We now use specific drafts, but we can look for the most recently saved one
+            const keys = getDraftKeys();
+            if (keys.length === 0) return false;
+            
+            // Sort by save date and pick newest
+            keys.sort((a,b) => {
+                const da = JSON.parse(localStorage.getItem(a)).savedAt;
+                const db = JSON.parse(localStorage.getItem(b)).savedAt;
+                return new Date(db) - new Date(da);
+            });
+            
+            loadSpecificDraft(keys[0]);
+            toggleDraftsPanel(); // close it if it was opened by loadSpecificDraft
+            return true;
         }
 
         // Initial setup
         window.onload = () => {
+            updateDraftsBadge();
             if (!loadDraft()) {
                 const today = new Date().toISOString().split('T')[0];
                 document.getElementById('toDate').value = today;
@@ -1076,21 +1326,28 @@
                 const brokerAccount = document.getElementById('brokerAccount').value;
                 const brokerIfsc = document.getElementById('brokerIfsc').value;
                 const brokerBranch = document.getElementById('brokerBranch').value;
+                const brokerBank = document.getElementById('brokerBank').value;
                 const partyName = document.getElementById('partyName').value || '';
                 const billNo = document.getElementById('billNo').value || '';
                 const brokerageType = document.getElementById('brokerageType').value || '';
                 const fromDate = document.getElementById('fromDate').value || '';
                 const toDate = document.getElementById('toDate').value || '';
-                // Filter entries by From-To date period
-                const filteredEntries = entries.filter(e => {
-                    if (!e.date) return true;
+                
+                 const filteredEntries = entries.filter(e => {
+                    // Strictest Filter: Must have a date AND [must have Name OR Truck OR Dalali > 0]
+                    if (!e.date) return false;
+                    const hP = e.party && e.party.trim() !== '';
+                    const hT = e.truckNo && e.truckNo.trim() !== '';
+                    const hD = Number(e.dalali || 0) !== 0;
+                    if (!hP && !hT && !hD) return false;
+                    
                     if (fromDate && e.date < fromDate) return false;
                     if (toDate && e.date > toDate) return false;
                     return true;
                 });
 
                 if (filteredEntries.length === 0) {
-                    showToast('No entries found in the selected date period!');
+                    showToast('No valid entries found (must have Name, Truck, or Amount)!');
                     return;
                 }
 
@@ -1099,359 +1356,213 @@
 
                 const workbook = new ExcelJS.Workbook();
                 const ws = workbook.addWorksheet('Invoice');
+                
+                // PAGE SETUP FOR PERFECT MULTI-PAGE PDF
+                ws.pageSetup.orientation = 'landscape';
+                ws.pageSetup.fitToPage = true;
+                ws.pageSetup.fitToWidth = 1;
+                ws.pageSetup.fitToHeight = 0; // Allow multiple pages flow naturally
 
-                // Dynamic column widths — auto-fit based on actual data content
-                // Helper: format number to Indian locale string to measure display length
-                function indiaNumLen(n) { return n ? n.toLocaleString('en-IN').length : 0; }
-                function rupeeNumLen(n) { return n ? ('₹ ' + n.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})).length : 0; }
+                const colWidths = [6, 14, 28, 12, 14, 14, 12, 18, 14];
+                ws.columns = colWidths.map((w, i) => {
+                    const colIdx = i + 1;
+                    // All columns center-aligned for professional look
+                    const alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
 
-                // Scan all entries to find max content width per column
-                const headerLens = [6, 6, 6, 6, 8, 8, 8, 10, 12]; // SL,DATE,NAME,RATE,BILL NO,WEIGHT,DALALI,TRUCK NO,CUTT DALALI
-                const maxLens = [...headerLens]; // start with header lengths as minimum
+                    // Set number formats at column level for perfect manual entry
+                    let numFmt = undefined;
+                    if (colIdx === 4 || colIdx === 6 || colIdx === 7 || colIdx === 9) numFmt = '#,##0';
 
-                filteredEntries.forEach((e, idx) => {
-                    maxLens[0] = Math.max(maxLens[0], String(idx + 1).length);
-                    maxLens[1] = Math.max(maxLens[1], 10); // DD-MM-YYYY = 10
-                    maxLens[2] = Math.max(maxLens[2], (e.party || '').length);
-                    maxLens[3] = Math.max(maxLens[3], indiaNumLen(Number(e.rate || 0)));
-                    maxLens[4] = Math.max(maxLens[4], (e.billNo || '').length);
-                    maxLens[5] = Math.max(maxLens[5], indiaNumLen(Number(e.weight || 0)));
-                    maxLens[6] = Math.max(maxLens[6], rupeeNumLen(Number(e.dalali || 0)));
-                    maxLens[7] = Math.max(maxLens[7], (e.truckNo || '').length);
-                    maxLens[8] = Math.max(maxLens[8], indiaNumLen(Number(e.cuttDalali || 0)));
+                    return { width: w, alignment, numFmt };
                 });
 
-                // Also check totals row
-                maxLens[5] = Math.max(maxLens[5], indiaNumLen(totalWeight));
-                maxLens[6] = Math.max(maxLens[6], rupeeNumLen(totalDalali));
-
-                // Also check summary table (Amount/Balance = totalDalali with ₹ format)
-                maxLens[6] = Math.max(maxLens[6], rupeeNumLen(totalDalali));
-
-                // Min and max width limits per column
-                const minWidths = [6, 12, 14, 8, 10, 10, 12, 12, 12];
-                const maxWidths = [10, 20, 34, 28, 20, 34, 34, 20, 34];
-
-                // Calculate final widths: content length + 4 padding, clamped between min/max
-                const colWidths = maxLens.map((len, i) => {
-                    const w = len + 4; // padding for borders + breathing room
-                    return Math.max(minWidths[i], Math.min(maxWidths[i], w));
-                });
-
-                ws.columns = colWidths.map(w => ({ width: w }));
-
-                // Reusable styles
                 const darkBlueFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
                 const lightGrayFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E8E8' } };
-                const whiteFontLarge = { name: 'Calibri', bold: true, color: { argb: 'FFFFFFFF' }, size: 16 };
                 const boldFont = { name: 'Calibri', bold: true, size: 10 };
                 const normalFont = { name: 'Calibri', size: 10 };
                 const thinBorder = {
-                    top: { style: 'thin', color: { argb: 'FF000000' } },
-                    left: { style: 'thin', color: { argb: 'FF000000' } },
-                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
-                    right: { style: 'thin', color: { argb: 'FF000000' } }
+                    top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' }
                 };
 
-                function styleRow(sheet, rowNum, startCol, endCol, font, fill, border, alignment) {
-                    const row = sheet.getRow(rowNum);
-                    for (let c = startCol; c <= endCol; c++) {
-                        const cell = row.getCell(c);
-                        if (font) cell.font = font;
-                        if (fill) cell.fill = fill;
-                        if (border) cell.border = border;
-                        if (alignment) cell.alignment = alignment;
-                    }
-                }
-
-                // ═══════════════════════════════════════════════
-                // PART 1: BROKER HEADER (Rows 1-5) — like ref img 1
-                // ═══════════════════════════════════════════════
-
-                // ROW 1: Broker Name — bold, size 14
+                // PART 1: BROKER HEADER
                 ws.mergeCells('A1:I1');
                 ws.getCell('A1').value = brokerName;
-                ws.getCell('A1').font = { name: 'Calibri', bold: true, size: 14 };
-                ws.getRow(1).height = 24;
+                ws.getCell('A1').font = { name: 'Calibri', bold: true, size: 12 };
 
-                // ROW 2: Address | Phone 1
-                ws.mergeCells('A2:D2');
-                ws.mergeCells('E2:I2');
-                ws.getCell('A2').value = `  ${brokerAddress}`;
-                ws.getCell('A2').font = normalFont;
-                ws.getCell('E2').value = `Phone: ${brokerPhone1}`;
-                ws.getCell('E2').font = normalFont;
-                ws.getCell('E2').alignment = { horizontal: 'right' };
+                ws.mergeCells('A2:D2'); ws.getCell('A2').value = brokerAddress; ws.getCell('A2').alignment = { horizontal: 'left' };
+                ws.mergeCells('E2:I2'); ws.getCell('E2').value = `Phone: ${brokerPhone1}`; ws.getCell('E2').alignment = { horizontal: 'right' };
 
-                // ROW 3: District | Phone 2
-                ws.mergeCells('A3:D3');
-                ws.mergeCells('E3:I3');
-                ws.getCell('A3').value = `  ${brokerDistrict}`;
-                ws.getCell('A3').font = normalFont;
-                ws.getCell('E3').value = brokerPhone2;
-                ws.getCell('E3').font = normalFont;
-                ws.getCell('E3').alignment = { horizontal: 'right' };
+                ws.mergeCells('A3:D3'); ws.getCell('A3').value = brokerDistrict; ws.getCell('A3').alignment = { horizontal: 'left' };
+                ws.mergeCells('E3:I3'); ws.getCell('E3').value = brokerPhone2; ws.getCell('E3').alignment = { horizontal: 'right' };
 
-                // ROW 4: PIN | Email
-                ws.mergeCells('A4:D4');
-                ws.mergeCells('E4:I4');
-                ws.getCell('A4').value = `  PIN-${brokerPin}`;
-                ws.getCell('A4').font = normalFont;
-                ws.getCell('E4').value = `E-mail: ${brokerEmail}`;
-                ws.getCell('E4').font = normalFont;
-                ws.getCell('E4').alignment = { horizontal: 'right' };
+                ws.mergeCells('A4:D4'); ws.getCell('A4').value = `PIN-${brokerPin}`; ws.getCell('A4').alignment = { horizontal: 'left' };
+                ws.mergeCells('E4:I4'); ws.getCell('E4').value = `E-mail: ${brokerEmail}`; ws.getCell('E4').alignment = { horizontal: 'right' };
 
-                // ROW 5: PAN (right side)
-                ws.mergeCells('E5:I5');
-                ws.getCell('E5').value = `PAN NO.-${brokerPan}`;
-                ws.getCell('E5').font = normalFont;
-                ws.getCell('E5').alignment = { horizontal: 'right' };
+                ws.mergeCells('E5:I5'); ws.getCell('E5').value = `PAN NO.-${brokerPan}`; ws.getCell('E5').alignment = { horizontal: 'right' };
 
-                // ROW 6: blank
-
-                // ═══════════════════════════════════════════════
-                // PART 2: A/C DETAIL (Rows 7-12) — like ref img 1
-                // ═══════════════════════════════════════════════
-
-                // ROW 7: "A/C DETAIL"
+                // PART 2: A/C DETAIL
                 ws.mergeCells('A7:C7');
                 ws.getCell('A7').value = '  A/C DETAIL';
-                ws.getCell('A7').font = { name: 'Calibri', bold: true, size: 11, underline: true, color: { argb: 'FF1E3A8A' } };
+                ws.getCell('A7').font = { ...boldFont, underline: true, color: { argb: 'FF1E3A8A' } };
 
-                // ROW 8: Broker name (left)
-                ws.mergeCells('A8:D8');
-                ws.getCell('A8').value = `    ${brokerName}`;
-                ws.getCell('A8').font = boldFont;
+                ws.getRow(8).getCell(1).value = `    ${brokerName}`; ws.getRow(8).getCell(1).font = boldFont;
+                ws.mergeCells('A9:D9'); ws.getCell('A9').value = `    A/C NO.-${brokerAccount}`;
+                ws.getCell('E9').value = 'Bill To:'; ws.getCell('E9').font = boldFont;
+                ws.getCell('G9').value = billNo; ws.getCell('G9').font = boldFont;
 
-                // ROW 9: A/C NO (left) | Bill To (right)
-                ws.mergeCells('A9:D9');
-                ws.getCell('A9').value = `    A/C NO.-${brokerAccount}`;
-                ws.getCell('A9').font = normalFont;
-                ws.getCell('E9').value = 'Bill To:';
-                ws.getCell('E9').font = boldFont;
-                ws.mergeCells('F9:G9');
-                ws.getCell('F9').value = billNo;
-                ws.getCell('F9').font = boldFont;
+                ws.mergeCells('A10:D10'); ws.getCell('A10').value = `    BANK-${brokerBank}`;
+                ws.getCell('G10').value = partyName; ws.getCell('G10').font = boldFont;
 
-                // ROW 10: IFSC (left) | Party Name (right)
-                ws.mergeCells('A10:D10');
-                ws.getCell('A10').value = `    IFSC CODE-${brokerIfsc}`;
-                ws.getCell('A10').font = normalFont;
-                ws.mergeCells('F10:I10');
-                ws.getCell('F10').value = partyName;
-                ws.getCell('F10').font = { name: 'Calibri', bold: true, size: 11 };
+                ws.mergeCells('A11:D11'); ws.getCell('A11').value = `    IFSC CODE-${brokerIfsc}`;
+                
+                ws.mergeCells('A12:D12'); ws.getCell('A12').value = `    BRANCH-${brokerBranch}`;
 
-                // ROW 11: BRANCH (left)
-                ws.mergeCells('A11:D11');
-                ws.getCell('A11').value = `    BRANCH-${brokerBranch}`;
-                ws.getCell('A11').font = normalFont;
+                // PART 3: UNIFIED SUMMARY TABLE (Two-Row Layout Rollback)
+                const sHeaders = ['Date', 'Type', 'Invoice #', 'Description', 'Amount', 'Payment', 'Balance'];
+                const sLayout = [
+                    { col: 2, val: sHeaders[0] }, // Date (B)
+                    { col: 3, val: sHeaders[1], merge: 'C14:D14' }, // Type (C-D)
+                    { col: 5, val: sHeaders[2] }, // Invoice # (E)
+                    { col: 6, val: sHeaders[3] }, // Description (F)
+                    { col: 7, val: sHeaders[4] }, // Amount (G)
+                    { col: 8, val: sHeaders[5] }, // Payment (H)
+                    { col: 9, val: sHeaders[6] }  // Balance (I)
+                ];
 
-                // ROW 12: blank
-
-                // ═══════════════════════════════════════════════
-                // PART 3: SUMMARY TABLE (Rows 13-17) — like ref img 1
-                // ═══════════════════════════════════════════════
-
-                // ROW 13: Summary header — merge columns for wider headers
-                // Columns: Date(A) | Type(B-C merged) | Invoice#(D) | Description(E) | Amount(F) | Payment(G) | Balance(H-I merged)
-                ws.mergeCells('B13:C13');
-                ws.mergeCells('H13:I13');
-                ws.getCell('A13').value = 'Date';
-                ws.getCell('B13').value = 'Type';
-                ws.getCell('D13').value = 'Invoice #';
-                ws.getCell('E13').value = 'Description';
-                ws.getCell('F13').value = 'Amount';
-                ws.getCell('G13').value = 'Payment';
-                ws.getCell('H13').value = 'Balance';
-                const summCols = [1,2,4,5,6,7,8];
-                summCols.forEach(c => {
-                    const cell = ws.getRow(13).getCell(c);
-                    cell.font = boldFont;
-                    cell.fill = lightGrayFill;
-                    cell.border = thinBorder;
-                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                ws.getRow(14).height = 20;
+                sLayout.forEach(item => {
+                    const headerCell = ws.getRow(14).getCell(item.col);
+                    headerCell.value = item.val;
+                    if (item.merge) ws.mergeCells(item.merge);
+                    headerCell.font = boldFont; headerCell.fill = lightGrayFill; headerCell.border = thinBorder; headerCell.alignment = { horizontal: 'center' };
                 });
-                ws.getRow(13).height = 20;
-
-                // ROW 14: Data row 1
-                ws.mergeCells('B14:C14');
-                ws.mergeCells('H14:I14');
-                const r14 = ws.getRow(14);
-                r14.getCell(1).value = formatDate(fromDate);
-                r14.getCell(2).value = brokerageType;
-                r14.getCell(6).value = totalDalali;
-                r14.getCell(6).numFmt = '"₹ "#,##,##0.00';
-                r14.getCell(8).value = totalDalali;
-                r14.getCell(8).numFmt = '"₹ "#,##,##0.00';
-                summCols.forEach(c => {
-                    const cell = r14.getCell(c);
-                    cell.font = normalFont;
-                    cell.border = thinBorder;
-                    cell.alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
-                });
-
-                // ROW 15: Total row
-                ws.mergeCells('B15:C15');
-                ws.mergeCells('H15:I15');
+                
+                // Summary Data (r15)
                 const r15 = ws.getRow(15);
-                r15.getCell(1).value = formatDate(toDate);
-                r15.getCell(2).value = brokerageType;
-                r15.getCell(2).font = boldFont;
-                r15.getCell(7).value = 'Total';
-                r15.getCell(7).font = boldFont;
-                r15.getCell(8).value = totalDalali;
-                r15.getCell(8).numFmt = '"₹ "#,##,##0.00';
-                r15.getCell(8).font = boldFont;
-                summCols.forEach(c => {
-                    const cell = r15.getCell(c);
-                    if (!cell.font) cell.font = normalFont;
-                    cell.border = thinBorder;
-                    cell.alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
-                });
-
-                // ROW 16: Reminder
-                ws.mergeCells('A16:I16');
-                ws.getCell('A16').value = 'Reminder: Please include the statement number on your check.';
-                ws.getCell('A16').font = { name: 'Calibri', italic: true, size: 9, color: { argb: 'FF64748B' } };
-
-                // ROW 17: Terms
-                ws.mergeCells('A17:I17');
-                ws.getCell('A17').value = 'Terms: Balance due in 30 days.';
-                ws.getCell('A17').font = { name: 'Calibri', italic: true, size: 9, color: { argb: 'FF64748B' } };
-
-                // ROW 18: blank
-
-                // ═══════════════════════════════════════════════════════
-                // PART 4: PARTY NAME BANNER (Rows 19-21) — like ref img 2
-                // Big dark blue banner with party name centered
-                // ═══════════════════════════════════════════════════════
-
-                ws.mergeCells('A19:I21');
-                const banner = ws.getCell('A19');
-                banner.value = partyName.toUpperCase();
-                banner.font = { name: 'Calibri', bold: true, color: { argb: 'FFFFFFFF' }, size: 18 };
-                banner.fill = darkBlueFill;
-                banner.alignment = { horizontal: 'center', vertical: 'middle' };
-                ws.getRow(19).height = 18;
-                ws.getRow(20).height = 18;
-                ws.getRow(21).height = 18;
-                // Fill all cells in the banner range with dark blue
-                for (let r = 19; r <= 21; r++) {
-                    for (let c = 1; c <= 9; c++) {
-                        const cell = ws.getRow(r).getCell(c);
-                        cell.fill = darkBlueFill;
-                    }
+                r15.getCell(2).value = formatDate(fromDate);
+                r15.getCell(3).value = partyName;
+                r15.getCell(7).value = totalDalali; r15.getCell(7).numFmt = '"₹ "#,##,##0.00';
+                r15.getCell(9).value = totalDalali; r15.getCell(9).numFmt = '"₹ "#,##,##0.00';
+                ws.mergeCells('C15:D15');
+                for (let i = 2; i <= 9; i++) {
+                    const cell = r15.getCell(i);
+                    cell.border = thinBorder; cell.alignment = { horizontal: 'center' };
                 }
 
-                // ═══════════════════════════════════════════════════════
-                // PART 5: DETAIL TABLE (Row 22+) — like ref img 2
-                // Column headers then data rows with borders
-                // ═══════════════════════════════════════════════════════
+                // Summary Total (r16)
+                const r16 = ws.getRow(16);
+                r16.getCell(2).value = formatDate(toDate);
+                r16.getCell(3).value = partyName;
+                r16.getCell(8).value = 'Total'; r16.getCell(8).font = boldFont;
+                r16.getCell(9).value = totalDalali; r16.getCell(9).numFmt = '"₹ "#,##,##0.00'; r16.getCell(9).font = boldFont;
+                ws.mergeCells('C16:D16');
+                for (let i = 2; i <= 9; i++) {
+                    const cell = r16.getCell(i);
+                    cell.border = thinBorder; cell.alignment = { horizontal: 'center' };
+                }
 
-                // ROW 22: Column headers — gray bg, bold, thin borders, centered
-                const dHeaders = ['SL NO.', 'DATE', 'NAME', 'RATE', 'BILL NO.', 'WEIGHT', 'DALALI', 'TRUCK NO.', 'CUTT DALALI'];
-                const dhRow = ws.getRow(22);
-                dHeaders.forEach((h, i) => { dhRow.getCell(i + 1).value = h; });
-                styleRow(ws, 22, 1, 9, boldFont, lightGrayFill, thinBorder, { horizontal: 'center', vertical: 'middle' });
-                dhRow.height = 18;
+                ws.mergeCells('A17:I17'); ws.getCell('A17').value = 'Reminder: Please include the statement number on your check.';
+                ws.getCell('A17').font = { ...normalFont, size: 9, italic: true };
+                ws.mergeCells('A18:I18'); ws.getCell('A18').value = 'Terms: Balance due in 30 days.';
+                ws.getCell('A18').font = { ...normalFont, size: 9, italic: true };
 
-                // ROW 23+: Data rows — clean, white bg, thin borders, vertically centered
-                filteredEntries.forEach((entry, idx) => {
-                    const rn = 23 + idx;
+                // PART 4: PARTY BANNER
+                ws.mergeCells('A20:I22');
+                const banner = ws.getCell('A20');
+                banner.value = partyName.toUpperCase();
+                banner.font = { name: 'Calibri', bold: true, color: { argb: 'FFFFFFFF' }, size: 16 };
+                banner.fill = darkBlueFill;
+                banner.alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
+                for (let r = 20; r <= 22; r++) { ws.getRow(r).eachCell({includeEmpty:true}, c => c.fill = darkBlueFill); }
+
+                // PART 5: DETAIL TABLE
+                const detHeaders = ['SL NO.', 'DATE', 'NAME', 'RATE', 'BILL NO.', 'WEIGHT', 'DALALI', 'TRUCK NO.', 'AGENCY'];
+                detHeaders.forEach((h, i) => {
+                    const cell = ws.getRow(23).getCell(i + 1);
+                    cell.value = h; cell.font = boldFont; cell.fill = lightGrayFill; cell.border = thinBorder; cell.alignment = { horizontal: 'center', shrinkToFit: true };
+                });
+
+                filteredEntries.forEach((e, idx) => {
+                    const rn = 24 + idx;
                     const row = ws.getRow(rn);
                     row.getCell(1).value = idx + 1;
-                    row.getCell(2).value = formatDate(entry.date);
-                    row.getCell(3).value = entry.party;
-                    row.getCell(4).value = Number(entry.rate) || 0;
-                    row.getCell(5).value = entry.billNo;
-                    row.getCell(6).value = Number(entry.weight) || 0;
-                    row.getCell(7).value = Number(entry.dalali) || 0;
-                    row.getCell(8).value = entry.truckNo;
-                    row.getCell(9).value = Number(entry.cuttDalali) || 0;
+                    row.getCell(2).value = formatDate(e.date);
+                    row.getCell(3).value = e.party;
+                    row.getCell(4).value = Number(e.rate);
+                    row.getCell(5).value = e.billNo;
+                    row.getCell(6).value = Number(e.weight);
+                    row.getCell(7).value = Number(e.dalali);
+                    row.getCell(8).value = e.truckNo;
+                    row.getCell(9).value = Number(e.cuttDalali);
 
-                    // Number formats
-                    row.getCell(4).numFmt = '#,##0';
-                    row.getCell(6).numFmt = '#,##0';
-                    row.getCell(7).numFmt = '"₹ "#,##,##0.00';
-                    row.getCell(9).numFmt = '#,##0';
-
-                    // Style: normal font, black thin borders, vertical middle on all cells
                     for (let c = 1; c <= 9; c++) {
                         const cell = row.getCell(c);
-                        cell.font = normalFont;
                         cell.border = thinBorder;
-                        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                        cell.font = normalFont;
+                        // (Alignment & NumFmt now handled by Column definitions above)
                     }
-                    // Override alignment — shrinkToFit prevents ### on any overflow
-                    row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
-                    row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
-                    row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
-                    row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
-                    row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
-                    row.getCell(7).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
-                    row.getCell(8).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
-                    row.getCell(9).alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
                 });
 
-                // TOTAL ROW — after all entries, bold
-                const totalRn = 23 + filteredEntries.length;
-                const totalRow = ws.getRow(totalRn);
-                totalRow.getCell(1).value = '';
-                totalRow.getCell(2).value = '';
-                totalRow.getCell(3).value = '';
-                totalRow.getCell(4).value = '';
-                totalRow.getCell(5).value = '';
-                totalRow.getCell(6).value = totalWeight;
-                totalRow.getCell(6).numFmt = '#,##0';
-                totalRow.getCell(7).value = totalDalali;
-                totalRow.getCell(7).numFmt = '"₹ "#,##,##0.00';
-                totalRow.getCell(8).value = '';
-                totalRow.getCell(9).value = '';
+                // FINAL ROWS: TOTAL & FOOTER
+                const totalRn = 24 + filteredEntries.length;
+                const periodRn = totalRn + 1;
+                
+                // 1. Total Row (Matches screenshot: No merge, values in Col 6/7)
+                const tr = ws.getRow(totalRn);
+                tr.getCell(5).value = 'TOTAL'; // Label in Col 5 (Bill No)
+                tr.getCell(5).font = boldFont;
+                // Use plain values (NumFmt handled at Column level)
+                tr.getCell(6).value = totalWeight;
+                tr.getCell(7).value = totalDalali;
+                
                 for (let c = 1; c <= 9; c++) {
-                    const cell = totalRow.getCell(c);
-                    cell.font = boldFont;
-                    cell.border = thinBorder;
-                    cell.alignment = { horizontal: 'center', vertical: 'middle', shrinkToFit: true };
+                    const cell = tr.getCell(c);
+                    cell.font = boldFont; cell.border = thinBorder;
                 }
 
-                // Period line after total
-                const periodRn = totalRn + 2;
+                // 2. Period/Summary Info Row (Included in PDF)
                 ws.mergeCells(`A${periodRn}:I${periodRn}`);
-                ws.getCell(`A${periodRn}`).value = `DATE-${formatDate(fromDate)} TO DATE-${formatDate(toDate)}  ${brokerageType}`;
-                ws.getCell(`A${periodRn}`).font = normalFont;
+                const pr = ws.getCell(`A${periodRn}`);
+                pr.value = `DATE-${formatDate(fromDate)} TO DATE-${formatDate(toDate)} ${brokerageType}`;
+                pr.font = { ...boldFont, size: 10 };
+                pr.border = thinBorder;
 
-                // Page setup
-                ws.pageSetup = {
-                    paperSize: 9,
-                    orientation: 'landscape',
-                    fitToPage: true,
-                    fitToWidth: 1,
-                    fitToHeight: 0
+                // PAGE INDEXING (Page 1 of N) in footer
+                ws.pageSetup.headerFooter = {
+                    oddFooter: "&CPage &P of &N",
+                    evenFooter: "&CPage &P of &N"
                 };
+                
+                // NO FIXED PRINT AREA! (Critial for "Auto-Growing" logic)
+                ws.pageSetup.printArea = undefined;
 
-                // Generate and download
+                // 3. APPLY BORDERS CONDITIONALLY FOR MANUAL ENTRIES (Up to Row 300)
+                // If the first cell of a data row (col A) has a value, show borders automatically
+                ws.addConditionalFormatting({
+                    ref: `A24:I300`,
+                    rules: [
+                        {
+                            type: 'expression',
+                            formulae: [`NOT(ISBLANK($A24))`],
+                            style: { border: thinBorder }
+                        }
+                    ]
+                });
+
                 const buffer = await workbook.xlsx.writeBuffer();
                 const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-
-                let fileName = 'TradeBill';
-                if (partyName) fileName += `_${partyName.replace(/\s+/g, '_')}`;
-                if (fromDate) fileName += `_${formatDate(fromDate)}`;
-                if (toDate) fileName += `_${formatDate(toDate)}`;
-                fileName += '.xlsx';
-
-                a.download = fileName;
+                a.download = `Bill_${partyName || 'Draft'}_${formatDate(toDate)}.xlsx`;
                 a.click();
                 URL.revokeObjectURL(url);
                 showToast('Excel Downloaded Successfully!');
             } catch (err) {
-                console.error('Excel generation error:', err);
-                showToast('Error generating Excel. Check console.');
+                console.error('Rollback Excel error:', err);
+                showToast('Error generating Excel');
             }
         }
-
         // ═══════════════════════════════════════════════
         // KEYBOARD NAVIGATION FOR ENTRIES TABLE
         // ═══════════════════════════════════════════════
@@ -1687,5 +1798,24 @@
             return `${d}-${m}-${y}`;
         }
     </script>
+<!-- Load broker config (gitignored) — falls back gracefully if file missing -->
+<script src="broker.config.js" onerror="console.warn('broker.config.js not found — broker fields will be empty. Copy broker.config.example.js to broker.config.js and fill in your details.')"></script>
+<script>
+    // Populate broker fields from BROKER_CONFIG if available
+    if (typeof BROKER_CONFIG !== 'undefined') {
+        document.getElementById('brokerName').value    = BROKER_CONFIG.name    || '';
+        document.getElementById('brokerAddress').value = BROKER_CONFIG.address || '';
+        document.getElementById('brokerDistrict').value= BROKER_CONFIG.district|| '';
+        document.getElementById('brokerPin').value     = BROKER_CONFIG.pin     || '';
+        document.getElementById('brokerPhone1').value  = BROKER_CONFIG.phone1  || '';
+        document.getElementById('brokerPhone2').value  = BROKER_CONFIG.phone2  || '';
+        document.getElementById('brokerEmail').value   = BROKER_CONFIG.email   || '';
+        document.getElementById('brokerPan').value     = BROKER_CONFIG.pan     || '';
+        document.getElementById('brokerAccount').value = BROKER_CONFIG.account || '';
+        document.getElementById('brokerIfsc').value    = BROKER_CONFIG.ifsc    || '';
+        document.getElementById('brokerBranch').value  = BROKER_CONFIG.branch  || '';
+        document.getElementById('brokerBank').value    = BROKER_CONFIG.bank    || '';
+    }
+</script>
 </body>
 </html>
