@@ -1798,24 +1798,37 @@
             return `${d}-${m}-${y}`;
         }
     </script>
-<!-- Load broker config (gitignored) — falls back gracefully if file missing -->
-<script src="broker.config.js" onerror="console.warn('broker.config.js not found — broker fields will be empty. Copy broker.config.example.js to broker.config.js and fill in your details.')"></script>
+<!-- Load broker config: tries Vercel API first, falls back to local broker.config.js -->
+<script src="broker.config.js" onerror="window._brokerConfigFileLoaded=false"></script>
 <script>
-    // Populate broker fields from BROKER_CONFIG if available
-    if (typeof BROKER_CONFIG !== 'undefined') {
-        document.getElementById('brokerName').value    = BROKER_CONFIG.name    || '';
-        document.getElementById('brokerAddress').value = BROKER_CONFIG.address || '';
-        document.getElementById('brokerDistrict').value= BROKER_CONFIG.district|| '';
-        document.getElementById('brokerPin').value     = BROKER_CONFIG.pin     || '';
-        document.getElementById('brokerPhone1').value  = BROKER_CONFIG.phone1  || '';
-        document.getElementById('brokerPhone2').value  = BROKER_CONFIG.phone2  || '';
-        document.getElementById('brokerEmail').value   = BROKER_CONFIG.email   || '';
-        document.getElementById('brokerPan').value     = BROKER_CONFIG.pan     || '';
-        document.getElementById('brokerAccount').value = BROKER_CONFIG.account || '';
-        document.getElementById('brokerIfsc').value    = BROKER_CONFIG.ifsc    || '';
-        document.getElementById('brokerBranch').value  = BROKER_CONFIG.branch  || '';
-        document.getElementById('brokerBank').value    = BROKER_CONFIG.bank    || '';
+    function applyBrokerConfig(c) {
+        document.getElementById('brokerName').value     = c.name     || '';
+        document.getElementById('brokerAddress').value  = c.address  || '';
+        document.getElementById('brokerDistrict').value = c.district || '';
+        document.getElementById('brokerPin').value      = c.pin      || '';
+        document.getElementById('brokerPhone1').value   = c.phone1   || '';
+        document.getElementById('brokerPhone2').value   = c.phone2   || '';
+        document.getElementById('brokerEmail').value    = c.email    || '';
+        document.getElementById('brokerPan').value      = c.pan      || '';
+        document.getElementById('brokerAccount').value  = c.account  || '';
+        document.getElementById('brokerIfsc').value     = c.ifsc     || '';
+        document.getElementById('brokerBranch').value   = c.branch   || '';
+        document.getElementById('brokerBank').value     = c.bank     || '';
     }
+
+    // 1. Try Vercel API (works on deployed Vercel — reads from Vercel env vars)
+    fetch('/api/config')
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => {
+            if (data.name) { applyBrokerConfig(data); return; }
+            throw new Error('empty');
+        })
+        .catch(() => {
+            // 2. Fall back to local broker.config.js (works on local machine)
+            if (typeof BROKER_CONFIG !== 'undefined') {
+                applyBrokerConfig(BROKER_CONFIG);
+            }
+        });
 </script>
 </body>
 </html>
