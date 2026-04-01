@@ -1,6 +1,9 @@
 # Sensitive broker data — never commit real config
 broker.config.js
 
+# Vercel deployment config
+vercel.json
+
 # Vercel
 .vercel
 
